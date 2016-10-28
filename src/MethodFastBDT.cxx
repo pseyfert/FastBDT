@@ -24,9 +24,8 @@ using namespace FastBDT;
 TMVA::MethodFastBDT::MethodFastBDT( const TString& jobName,
                             const TString& methodTitle,
                             DataSetInfo& theData,
-                            const TString& theOption,
-                            TDirectory* theTargetDir ) :
-   TMVA::MethodBase( jobName, Types::kPlugins, methodTitle, theData, theOption, theTargetDir )
+                            const TString& theOption ) :
+   TMVA::MethodBase( jobName, Types::kPlugins, methodTitle, theData, theOption)
    , fNTrees(0)
    , fShrinkage(0)
    , fRandRatio(0)
@@ -41,9 +40,8 @@ TMVA::MethodFastBDT::MethodFastBDT( const TString& jobName,
 }
 
 TMVA::MethodFastBDT::MethodFastBDT( DataSetInfo& theData,
-                            const TString& theWeightFile,
-                            TDirectory* theTargetDir )
-   : TMVA::MethodBase( Types::kPlugins, theData, theWeightFile, theTargetDir )
+                            const TString& theWeightFile)
+   : TMVA::MethodBase( Types::kPlugins, theData, theWeightFile)
    , fNTrees(0)
    , fShrinkage(0)
    , fRandRatio(0)

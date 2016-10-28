@@ -27,23 +27,19 @@ namespace TMVA {
        * @param methodTitle title of the method
        * @param theData data which was added to the TMVA Factory
        * @param theOption options string passed by the user to this method
-       * @param theTargetDir target directory in ROOT file which stores the information about the training 
        */
       MethodFastBDT( const TString& jobName,
                  const TString& methodTitle,
                  DataSetInfo& theData,
-                 const TString& theOption = "",
-                 TDirectory* theTargetDir = 0 );
+                 const TString& theOption = "");
 
       /**
        * Constructor for calculating BDT-MVA using previously generated decision trees
        * @param theData data which should be classified
        * @param theWeightFile the xml file from which the method reads the weights
-       * @param theTargetDir target directory in ROOT file which stores information about the training
        */
       MethodFastBDT( DataSetInfo& theData,
-                 const TString& theWeightFile,
-                 TDirectory* theTargetDir = NULL );
+                 const TString& theWeightFile);
 
       /**
        * Destroys method by deleteting the forest and the transformer
