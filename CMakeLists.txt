@@ -17,7 +17,7 @@ configure_file (
   "${PROJECT_BINARY_DIR}/include/FastBDT.h"
 )
 
-include_directories("${PROJECT_SOURCE_DIR}/include/")
+include_directories("${PROJECT_SOURCE_DIR}/include/" "${PROJECT_BINARY_DIR}/include/")
 
 set(FastBDT_SOURCES
   "${PROJECT_SOURCE_DIR}/src/FastBDT.cxx"
@@ -70,6 +70,7 @@ endif()
 
 find_package(ROOT)
 if(ROOT_FOUND)
+  message(STATUS "Found ROOT installation " ${ROOT_VERSION_MAJOR})
   separate_arguments(ROOT_CXX_FLAGS)
   if (ROOT_VERSION_MAJOR GREATER 5)
     # copy header with dictionary to the build folder so we can use relative include Path
@@ -85,8 +86,8 @@ if(ROOT_FOUND)
     install(TARGETS TMVAFastBDT DESTINATION ${ROOT_LIBRARY_DIR})
     install(FILES "${CMAKE_BINARY_DIR}/TMVA_FastBDT_Dict_rdict.pcm" DESTINATION ${ROOT_LIBRARY_DIR})
     install(FILES "${PROJECT_SOURCE_DIR}/include/MethodFastBDT.h" ${FastBDT_HEADERS} DESTINATION ${ROOT_INCLUDE_DIR})
+    install(CODE "execute_process(COMMAND patch -p1 -d ${ROOTSYS} -i ${PROJECT_SOURCE_DIR}/FastBDT.patch)")
   else()
-    message(STATUS "Found ROOT installation " ${ROOT_VERSION_MAJOR})
     message(STATUS "Could not find ROOT 6 installation, skip building TMVA interface.")
   endif()
 else()
