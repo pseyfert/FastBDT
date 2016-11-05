@@ -8,10 +8,10 @@ case $CURRENT in
     _describe 'task' tasks
     ;;
   3)
-    _files -X 'datafile'
+    _alternative ":datafile:_files"
     ;;
   4)
-    _files -X 'weightfile'
+    _alternative ":weightfile:_files"
     ;;
   *)
     mode=$words[2]
