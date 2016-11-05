@@ -57,6 +57,10 @@ install(TARGETS FastBDT_static FastBDT_shared FastBDTMain FastBDT_CInterface
 
 install(FILES ${FastBDT_HEADERS} DESTINATION include)
 
+install(FILES ${PROJECT_SOURCE_DIR}/files/FastBDTMain.zshcompletion
+        DESTINATION share/zsh/site-functions
+        RENAME _FastBDTMain)
+
 find_package(GTest)
 if(GTEST_FOUND)
     add_executable(unittests ${FastBDT_TESTS} ${FastBDT_HEADERS} ${FastBDT_CINTERFACE})
