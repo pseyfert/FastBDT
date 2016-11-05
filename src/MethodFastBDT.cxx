@@ -17,6 +17,8 @@
 #include "TMVA/Results.h"
 #include "TMVA/ResultsMulticlass.h"
 
+#include "FastBDT_IO.h"
+
 ClassImp(TMVA::MethodFastBDT)
 
 using namespace FastBDT;
@@ -41,6 +43,7 @@ TMVA::MethodFastBDT::MethodFastBDT( const TString& jobName,
    , fsPlot(false)
    , transform2probability(false)
    , useWeightedFeatureBinning(false)
+   , fPurityTransformation(0)
    , useEquidistantFeatureBinning(false)
    , fNCutLevel(0)
    , fNTreeLayers(0)
@@ -64,6 +67,7 @@ TMVA::MethodFastBDT::MethodFastBDT( DataSetInfo& theData,
    , fsPlot(false)
    , transform2probability(false)
    , useWeightedFeatureBinning(false)
+   , fPurityTransformation(0)
    , useEquidistantFeatureBinning(false)
    , fNCutLevel(0)
    , fNTreeLayers(0)
@@ -88,10 +92,12 @@ void TMVA::MethodFastBDT::DeclareOptions()
 
    DeclareOptionRef(fNTrees=100, "NTrees", "Number of trees in the forest");
    DeclareOptionRef(fNTreeLayers=3,"NTreeLayers","Max depth of the decision tree allowed");
-   DeclareOptionRef(fNCutLevel=8, "NCutLevel", "Number of binning level. Determines number of bins in variable range used in finding optimal cut in node splitting.");
+   DeclareOptionRef(fNCutLevel=8, "NCutLevel", "Number of binning level (2^N bins). Determines number of bins in variable range used in finding optimal cut in node splitting. Should be below 7-10.");
    DeclareOptionRef(fShrinkage=1.0, "Shrinkage", "Learning rate for Gradient Boost algorithm");
    DeclareOptionRef(fRandRatio=1.0, "RandRatio", "Ratio for Stochastic Gradient Boost algorithm");
    DeclareOptionRef(fsPlot=false, "sPlot", "Keep signal and background event pairs together during stochastic bagging, should improve an sPlot training, but frankly said: There was no difference in my tests");
+   DeclareOptionRef(fPurityTransformation=0, "purityTransformation", "Transform the variables into purity space before building the tree, this will slow down the training a little bit, and the application a lot (Not implemented in the TMVA method yet, only in FastBDT)");
+   DeclareOptionRef(standaloneWeightfileName=TString(""), "standaloneWeightfileName", "Write out a standalone weightfile for FastBDT in addition to the TMVA weightfile.");
    DeclareOptionRef(transform2probability=true, "transform2probability", "Use sigmoid function to transform output to probability");
    DeclareOptionRef(useWeightedFeatureBinning=false, "useWeightedFeatureBinning", "Use weighted feature binning for equal frequency binning.");
    DeclareOptionRef(useEquidistantFeatureBinning=false, "useEquidistantFeatureBinning", "Use equidistant binning instead of equal frequency binning.");
@@ -112,6 +118,7 @@ void TMVA::MethodFastBDT::Init()
    fShrinkage       = 1.0;
    fRandRatio       = 1.0;
    fsPlot           = false;
+   fPurityTransformation = 0;
    transform2probability = true;
    useWeightedFeatureBinning = false;
    useEquidistantFeatureBinning = false;
@@ -130,6 +137,7 @@ void TMVA::MethodFastBDT::Reset()
 void TMVA::MethodFastBDT::Train()
 {
 
+  Log() << kINFO << "Start FastBDT training" << Endl;
   Data()->SetCurrentType(Types::kTraining);
   UInt_t nEvents = Data()->GetNTrainingEvents();
   UInt_t nFeatures = GetNvar();
@@ -138,7 +146,8 @@ void TMVA::MethodFastBDT::Train()
   // into an EventSample object.
   std::vector<FastBDT::FeatureBinning<double>> featureBinnings;
   std::vector<unsigned int> nBinningLevels;
-  
+ 
+  Log() << kINFO << "Create Binning" << Endl;
   if(useEquidistantFeatureBinning) {
       for(unsigned int iFeature = 0; iFeature < nFeatures; ++iFeature) {
           std::vector<double> feature(nEvents,0);
@@ -166,9 +175,6 @@ void TMVA::MethodFastBDT::Train()
       }
       double signal_correction = (2*total_bckgrd_weight) / (total_signal_weight + total_bckgrd_weight);
       double bckgrd_correction = (2*total_signal_weight) / (total_signal_weight + total_bckgrd_weight);
-
-      std::cerr << "Signal Correction " << signal_correction << std::endl;
-      std::cerr << "Bckgrd Correction " << bckgrd_correction << std::endl;
 
       std::vector<FastBDT::Weight> weights(nEvents,0);
       for (unsigned int iEvent=0; iEvent<nEvents; iEvent++) {
@@ -210,6 +216,7 @@ void TMVA::MethodFastBDT::Train()
      nEventsPruned++;
   }
 
+  Log() << kINFO << "Build EventSample" << Endl;
   EventSample eventSample(nEventsPruned, nFeatures, nBinningLevels);
 
   for(unsigned int iEvent = 0; iEvent < nEvents; ++iEvent) {
@@ -226,10 +233,26 @@ void TMVA::MethodFastBDT::Train()
   }
  
   // Create the forest, this also trains the whole forest immediatly
+  Log() << kINFO << "Train forest" << Endl;
   ForestBuilder builder(eventSample, fNTrees, fShrinkage, fRandRatio, fNTreeLayers, fsPlot);
+  
+  Log() << kINFO << "Remove feature binning from trained forest" << Endl;
   fForest = new Forest<double>( builder.GetShrinkage(), builder.GetF0(), transform2probability);
   for( auto tree : builder.GetForest() )
       fForest->AddTree(removeFeatureBinningTransformationFromTree(tree, featureBinnings));
+  
+  Log() << kINFO << "Finished training" << Endl;
+
+  if( standaloneWeightfileName.Length() > 0 ) {
+    Log() << kINFO << "Write out additional standalone weightfile to " << standaloneWeightfileName << Endl;
+    std::fstream file(standaloneWeightfileName.Data(), std::ios_base::out | std::ios_base::trunc);
+    if(file.is_open()) {
+        file << (*fForest) << std::endl;
+        file.close();
+    } else {
+        Log() << kINFO << "Failed to open standalone weightfile for writing" << Endl;
+    }
+  }
 
 }
 
@@ -294,6 +317,7 @@ void ReadVectorFromXML(void *parent, std::string name, std::vector<T> &vector) {
 void TMVA::MethodFastBDT::AddWeightsXMLTo( void* parent ) const
 {
    // write weights to XML
+   Log() << kINFO << "Write FastBDT weightfile to xml" << Endl;
    void* wght = TMVA::gTools().AddChild(parent, "Weights");
 
    TMVA::gTools().AddAttr( wght, "Version", 2 );
@@ -336,18 +360,19 @@ void TMVA::MethodFastBDT::AddWeightsXMLTo( void* parent ) const
 void TMVA::MethodFastBDT::ReadWeightsFromXML(void* parent) {
 
    Reset();
+   Log() << kINFO << "Read FastBDT weightfile from xml" << Endl;
    if(TMVA::gTools().HasAttr( parent, "Version" )) {
      unsigned int version = 0;
      TMVA::gTools().ReadAttr( parent, "Version", version );
      if(version == 2) {
-		std::cout << "Loading newest FastBDT weightfile Version 2." << std::endl;
-	 	TMVA::MethodFastBDT::ReadWeightsFromXML_V2(parent);
-	 } else {
-		throw std::runtime_error("Unkown FastBDT weightfile Version " + std::to_string(version) + ". Sorry I have no idea how to load this");
+      Log() << kINFO << "Loading newest FastBDT weightfile Version 2." << Endl;
+      TMVA::MethodFastBDT::ReadWeightsFromXML_V2(parent);
+     } else {
+        Log() << kFATAL << "Unkown FastBDT weightfile Version " << std::to_string(version) << ". Sorry I have no idea how to load this" << Endl;
      }
    } else {
-	 std::cout << "Loading deprecated FastBDT weightfile Version 1." << std::endl;
-	 std::cout << "This should be save, however think about retraining your classifier, so you can profit from improvements in the algorithm." << std::endl;
+   Log() << kINFO << "Loading deprecated FastBDT weightfile Version 1." << Endl;
+   Log() << kINFO << "This should be save, however think about retraining your classifier, so you can profit from improvements in the algorithm." << Endl;
 	 TMVA::MethodFastBDT::ReadWeightsFromXML_V1(parent);
    } 
 
@@ -355,6 +380,7 @@ void TMVA::MethodFastBDT::ReadWeightsFromXML(void* parent) {
 
 void TMVA::MethodFastBDT::ReadWeightsFromXML_V2(void* parent) {
 
+   Log() << kINFO << "Read FastBDT weightfile from xml version 2" << Endl;
    TMVA::gTools().ReadAttr( parent, "NTrees", fNTrees );
    TMVA::gTools().ReadAttr( parent, "Shrinkage", fShrinkage );
    TMVA::gTools().ReadAttr( parent, "NCuts", fNCutLevel );
@@ -406,6 +432,7 @@ void TMVA::MethodFastBDT::ReadWeightsFromXML_V2(void* parent) {
 
 void TMVA::MethodFastBDT::ReadWeightsFromXML_V1(void* parent) {
 
+   Log() << kINFO << "Read FastBDT weightfile from xml version 1" << Endl;
    void* binxml = TMVA::gTools().GetChild(parent, "Binning");
 
    std::vector<FastBDT::FeatureBinning<double>> featureBinnings;
@@ -489,6 +516,7 @@ Double_t TMVA::MethodFastBDT::GetMvaValue( Double_t*, Double_t*){
 
 const TMVA::Ranking* TMVA::MethodFastBDT::CreateRanking()
 {
+   Log() << kINFO << "Create FastBDT ranking" << Endl;
    // Compute ranking of input variables
    fRanking = new TMVA::Ranking( GetName(), "Variable Importance" );
    std::map<unsigned int, double> ranking = fForest->GetVariableRanking();
@@ -500,7 +528,44 @@ const TMVA::Ranking* TMVA::MethodFastBDT::CreateRanking()
 
 void TMVA::MethodFastBDT::GetHelpMessage() const
 {
-   Log() << "Nice help message" << Endl;
+   Log() << kINFO << "FastBDT: See https://github.com/thomaskeck/FastBDT" << Endl;
+   Log() << kINFO << "Cite https://arxiv.org/abs/1609.06119" << Endl;
 }
 
+
+void createCStatementsForCuts(std::ostream& fout, const std::vector<Cut<double>> &cuts, const std::vector<Weight> &boostWeights, unsigned int iCut) {
+      
+  if(iCut < cuts.size() && cuts[iCut].valid) {
+    fout << " if( std::isnan(inputValues[" << cuts[iCut].feature << "]) ) { " << std::endl;
+    fout << "   F += " << boostWeights[iCut] << ";" << std::endl;
+    fout << "  } " << std::endl;
+    fout << "  else if(inputValues[" << cuts[iCut].feature << "] >= " << cuts[iCut].index << ") { " << std::endl;
+    createCStatementsForCuts(fout, cuts, boostWeights, 2*(iCut+1) + 1 - 1);
+    fout << "  } else { " << std::endl;
+    createCStatementsForCuts(fout, cuts, boostWeights, 2*(iCut+1) - 1);
+    fout << "  } " << std::endl;
+  } else {
+    fout << "   F += " << boostWeights[iCut] << ";" << std::endl; 
+  }
+
+}
+
+void TMVA::MethodFastBDT::MakeClassSpecific( std::ostream& fout, const TString& className ) const
+{
+   fout << "};" << std::endl << std::endl;
+   fout << "double " << className << "::GetMvaValue__( const std::vector<double>& inputValues ) const" << std::endl;
+   fout << "{" << std::endl;
+   fout << "   double F = " << (fForest->GetF0() / fForest->GetShrinkage()) << ";" << std::endl;
+   for(auto &tree : fForest->GetForest()) {
+      createCStatementsForCuts(fout, tree.GetCuts(), tree.GetBoostWeights(), 0);
+    }
+    fout << " F *= " << std::to_string(fForest->GetShrinkage()) << ";" << std::endl;
+    if(fForest->GetTransform2Probability()) {
+        fout << " F = 1.0/(1.0+std::exp(-2*F)); " << std::endl;
+    }
+   fout << "   return F;" << std::endl;
+   fout << "};" << std::endl << std::endl;
+   fout << "void " << className << "::Initialize() { };" << std::endl;
+   fout << "inline void " << className << "::Clear() { };" << std::endl;
+}
 

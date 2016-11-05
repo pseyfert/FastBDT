@@ -180,6 +180,11 @@ namespace TMVA {
        * Prints a help message for this method
        */
       void GetHelpMessage() const;
+      
+      /*
+       * make ROOT-independent C++ class for classifier response (classifier-specific implementation)
+       */
+      void MakeClassSpecific( std::ostream&, const TString& ) const;
 
    private:
 
@@ -219,6 +224,11 @@ namespace TMVA {
       bool useEquidistantFeatureBinning;
 
       /**
+       * Standalone weightfile name
+       */
+      TString standaloneWeightfileName;
+
+      /**
        * Binning levels used, determines cuts applied in node splitting
        */
       Int_t fNCutLevel;           
@@ -227,6 +237,11 @@ namespace TMVA {
        * Depth of decision trees
        */
       Int_t fNTreeLayers;          
+      
+      /**
+       * Use purity transformation for all features
+       */
+      Int_t fPurityTransformation;          
 
       /**
        * Pointer to the Forest trained by this method
