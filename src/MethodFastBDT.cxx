@@ -90,11 +90,11 @@ Bool_t TMVA::MethodFastBDT::HasAnalysisType( Types::EAnalysisType type, UInt_t n
 void TMVA::MethodFastBDT::DeclareOptions()
 {
 
-   DeclareOptionRef(fNTrees=100, "NTrees", "Number of trees in the forest");
-   DeclareOptionRef(fNTreeLayers=3,"NTreeLayers","Max depth of the decision tree allowed");
-   DeclareOptionRef(fNCutLevel=8, "NCutLevel", "Number of binning level (2^N bins). Determines number of bins in variable range used in finding optimal cut in node splitting. Should be below 7-10.");
-   DeclareOptionRef(fShrinkage=1.0, "Shrinkage", "Learning rate for Gradient Boost algorithm");
-   DeclareOptionRef(fRandRatio=1.0, "RandRatio", "Ratio for Stochastic Gradient Boost algorithm");
+   DeclareOptionRef(fNTrees=100, "NTrees", FastBDT_nTrees_String);
+   DeclareOptionRef(fNTreeLayers=3,"NTreeLayers",FastBDT_nLevels_String);
+   DeclareOptionRef(fNCutLevel=8, "NCutLevel", FastBDT_nCuts_String);
+   DeclareOptionRef(fShrinkage=1.0, "Shrinkage", FastBDT_shrinkage_String);
+   DeclareOptionRef(fRandRatio=1.0, "RandRatio", FastBDT_randRatio_String);
    DeclareOptionRef(fsPlot=false, "sPlot", "Keep signal and background event pairs together during stochastic bagging, should improve an sPlot training, but frankly said: There was no difference in my tests");
    DeclareOptionRef(fPurityTransformation=0, "purityTransformation", "Transform the variables into purity space before building the tree, this will slow down the training a little bit, and the application a lot (Not implemented in the TMVA method yet, only in FastBDT)");
    DeclareOptionRef(standaloneWeightfileName=TString(""), "standaloneWeightfileName", "Write out a standalone weightfile for FastBDT in addition to the TMVA weightfile.");

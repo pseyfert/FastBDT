@@ -11,6 +11,27 @@
 #include <fstream>
 #include <sstream>
 
+int usage(int argc, char *argv[]) {
+    std::cerr << "Usage: " << argv[0] << " apply datafile weightfile" << std::endl;
+    std::cerr << "       " << argv[0] << " train datafile weightfile [nCuts=4] [nTrees=100] [nLevels=3] [shrinkage=0.1] [randRatio=0.5]" << std::endl;
+    std::cerr << "       " << argv[0] << " --help" << std::endl;
+    
+    if(argc > 1 && std::string("--help") == argv[1]) {
+      std::cerr << std::endl;
+      std::cerr << "OPTIONS" << std::endl;
+      std::cerr << "\ttrain:     Train a BDT based on the data in datafile and write the trained BDT to weightfile." << std::endl;
+      std::cerr << "\tapply:     Apply the BDT stored in weightfile to datafile." << std::endl;
+      std::cerr << std::endl;
+      std::cerr << "PARAMETERS" << std::endl;
+      std::cerr << "\tnCuts:     " << FastBDT_nCuts_String << std::endl;
+      std::cerr << "\tnTrees:    " << FastBDT_nTrees_String << std::endl;
+      std::cerr << "\tnLevels:   " << FastBDT_nLevels_String << std::endl;
+      std::cerr << "\tshrinkage: " << FastBDT_shrinkage_String << std::endl;
+      std::cerr << "\trandRatio: " << FastBDT_randRatio_String << std::endl;
+      return 0;
+    }
+    return 1;
+}
 
 std::vector<std::vector<double>> readDataFile(std::string datafile) {
 
@@ -104,8 +125,7 @@ void analyse(const FastBDT::Forest<double> &forest, const std::vector<std::vecto
 int train(int argc, char *argv[]) {
 
 	if( argc < 4 ) {
-		std::cerr << "Usage: " << argv[0] << " train datafile weightfile [nCuts=4] [nTrees=100] [nLevels=3] [shrinkage=0.1] [randRatio=0.5]" << std::endl;
-		return 1;
+		return usage(argc, argv);
 	}
 
 	std::string datafile(argv[2]);
@@ -209,8 +229,7 @@ int train(int argc, char *argv[]) {
 int apply(int argc, char *argv[]) {
 
 	if( argc < 4 ) {
-		std::cerr << "Usage: " << argv[0] << " train datafile weightfile" << std::endl;
-		return 1;
+    return usage(argc, argv);
 	}
 
 	std::string datafile(argv[2]);
@@ -237,8 +256,7 @@ int main(int argc, char *argv[]) {
 	std::cerr << "FastBDT Version: " << FastBDT_VERSION_MAJOR << "." << FastBDT_VERSION_MINOR << std::endl;
 
     if( argc <= 1 ) {
-        std::cerr << "Usage: " << argv[0] << " [train|apply]" << std::endl;
-        return 1;
+      return usage(argc, argv);
     }
 
     if(std::string("train") == argv[1]) {
@@ -247,6 +265,10 @@ int main(int argc, char *argv[]) {
 
     if(std::string("apply") == argv[1]) {
     	return apply(argc, argv);
+    }
+
+    if(std::string("--help") == argv[1]) {
+    	return usage(argc, argv);
     }
 
     std::cerr << "Unknown option " << argv[1] << std::endl;
