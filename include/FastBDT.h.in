@@ -10,6 +10,12 @@
 #define FastBDT_VERSION_MAJOR @FastBDT_VERSION_MAJOR@
 #define FastBDT_VERSION_MINOR @FastBDT_VERSION_MINOR@
 
+#define FastBDT_nTrees_String "Number of trees in the forest"
+#define FastBDT_nCuts_String "Number of binning level (2^N bins). Determines number of bins in variable range used in finding optimal cut in node splitting. Should be below 7-10."
+#define FastBDT_nLevels_String "Max depth of the decision tree allowed"
+#define FastBDT_shrinkage_String "Learning rate for Gradient Boost algorithm"
+#define FastBDT_randRatio_String "Ratio for Stochastic Gradient Boost algorithm"
+
 #include <iostream>
 #include <stdexcept>
 #include <vector>

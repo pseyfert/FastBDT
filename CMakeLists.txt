@@ -57,6 +57,10 @@ install(TARGETS FastBDT_static FastBDT_shared FastBDTMain FastBDT_CInterface
 
 install(FILES ${FastBDT_HEADERS} DESTINATION include)
 
+install(FILES ${PROJECT_SOURCE_DIR}/files/FastBDTMain.zshcompletion
+        DESTINATION share/zsh/site-functions
+        RENAME _FastBDTMain)
+
 find_package(GTest)
 if(GTEST_FOUND)
     add_executable(unittests ${FastBDT_TESTS} ${FastBDT_HEADERS} ${FastBDT_CINTERFACE})
@@ -70,6 +74,10 @@ endif()
 
 find_package(ROOT)
 if(ROOT_FOUND)
+<<<<<<< HEAD
+=======
+  message(STATUS "Found ROOT installation " ${ROOT_VERSION_MAJOR})
+>>>>>>> mine/master
   separate_arguments(ROOT_CXX_FLAGS)
   if (ROOT_VERSION_MAJOR GREATER 5)
     # copy header with dictionary to the build folder so we can use relative include Path
@@ -93,7 +101,10 @@ if(ROOT_FOUND)
       message(STATUS "Cannot patch TMVA tutorial file -> won't do it.")
     endif()
   else()
+<<<<<<< HEAD
     message(STATUS "Found ROOT installation " ${ROOT_VERSION_MAJOR})
+=======
+>>>>>>> mine/master
     message(STATUS "Could not find ROOT 6 installation, skip building TMVA interface.")
   endif()
 else()

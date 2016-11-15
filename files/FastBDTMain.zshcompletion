@@ -1,0 +1,46 @@
+#compdef FastBDTMain
+
+local mode
+case $CURRENT in
+  2)
+    local -a tasks
+    tasks=('train' 'apply')
+    _describe 'task' tasks
+    ;;
+  3)
+    _alternative ":datafile:_files"
+    ;;
+  4)
+    _alternative ":weightfile:_files"
+    ;;
+  *)
+    mode=$words[2]
+    case $mode in
+      apply)
+        _message "no more arguments"
+        ;;
+      train)
+        case $CURRENT in
+          5)
+            _message "nCuts (default: 4)"
+            ;;
+          6)
+            _message "nTrees (default: 100)"
+            ;;
+          7)
+            _message "nLevels (default: 3)"
+            ;;
+          8)
+            _message "shrinkage (default: 0.1)"
+            ;;
+          9)
+            _message "randRatio (default: 0.5)"
+            ;;
+          *)
+            _message "no more arguments"
+            ;;
+        esac
+        ;;
+    esac
+    ;;
+esac
